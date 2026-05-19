@@ -13,7 +13,6 @@ const Transactions = () => {
     account_id: '',
     amount: '',
     transaction_type: 'expense',
-    category: '',
     description: '',
     transaction_date: new Date().toISOString().split('T')[0],
   })
@@ -39,9 +38,17 @@ const Transactions = () => {
     e.preventDefault()
     setCreating(true)
     try {
-      await transactionsAPI.create({ ...form, amount: parseFloat(form.amount) })
+      const raw = parseFloat(form.amount)
+      // Backend uses signed amounts: positive = income, negative = expense
+      const signedAmount = form.transaction_type === 'income' ? Math.abs(raw) : -Math.abs(raw)
+      await transactionsAPI.create({
+        account_id: parseInt(form.account_id),
+        amount: signedAmount,
+        description: form.description || null,
+        transaction_date: form.transaction_date,
+      })
       setShowForm(false)
-      setForm({ account_id: '', amount: '', transaction_type: 'expense', category: '', description: '', transaction_date: new Date().toISOString().split('T')[0] })
+      setForm({ account_id: '', amount: '', transaction_type: 'expense', description: '', transaction_date: new Date().toISOString().split('T')[0] })
       fetchData()
     } catch {
       setError('Failed to create transaction')
@@ -92,9 +99,8 @@ const Transactions = () => {
                 onChange={(e) => setForm({ ...form, transaction_type: e.target.value })}
                 className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               >
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-                <option value="transfer">Transfer</option>
+                <option value="expense">Expense (−)</option>
+                <option value="income">Income (+)</option>
               </select>
               <input
                 type="number"
@@ -102,14 +108,8 @@ const Transactions = () => {
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
                 required
+                min="0.01"
                 step="0.01"
-                className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              />
-              <input
-                type="text"
-                placeholder="Category (e.g. Food, Rent)"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
                 className="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
               <input
@@ -157,35 +157,36 @@ const Transactions = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-gray-500">{tx.transaction_date?.split('T')[0]}</td>
-                    <td className="px-6 py-4 text-gray-800">{tx.description || '—'}</td>
-                    <td className="px-6 py-4 text-gray-500">{tx.category || '—'}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        tx.transaction_type === 'income' ? 'bg-green-50 text-green-600' :
-                        tx.transaction_type === 'expense' ? 'bg-red-50 text-red-600' :
-                        'bg-blue-50 text-blue-600'
+                {transactions.map((tx) => {
+                  const txType = parseFloat(tx.amount) >= 0 ? 'income' : 'expense'
+                  return (
+                    <tr key={tx.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-gray-500">{tx.transaction_date}</td>
+                      <td className="px-6 py-4 text-gray-800">{tx.description || '—'}</td>
+                      <td className="px-6 py-4 text-gray-500">{tx.category_name || '—'}</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          txType === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                        }`}>
+                          {txType}
+                        </span>
+                      </td>
+                      <td className={`px-6 py-4 text-right font-semibold ${
+                        txType === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {tx.transaction_type}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 text-right font-semibold ${
-                      tx.transaction_type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      £{parseFloat(tx.amount).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(tx.id)}
-                        className="text-red-400 hover:text-red-600 text-xs font-medium"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        £{Math.abs(parseFloat(tx.amount)).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => handleDelete(tx.id)}
+                          className="text-red-400 hover:text-red-600 text-xs font-medium"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
