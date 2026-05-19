@@ -19,7 +19,9 @@ services:
       retries: 5
 
   backend:
-    image: nisarg2001009/devops-python-api:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: finance_backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-financeuser}:${POSTGRES_PASSWORD:-financepass}@db:5432/${POSTGRES_DB:-financedb}
@@ -40,8 +42,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: finance_frontend
-    environment:
-      - VITE_API_URL=http://localhost:8000
     depends_on:
       - backend
     ports:
