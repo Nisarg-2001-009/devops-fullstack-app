@@ -5,14 +5,13 @@ import { useAuth } from '../context/AuthContext'
 const Register = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
   const [success, setSuccess] = useState(false)
   const { register, loading, error } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    const ok = await register(email, password, fullName)
+    const ok = await register(email, password)
     if (ok) {
       setSuccess(true)
       setTimeout(() => navigate('/login'), 2000)
@@ -27,17 +26,6 @@ const Register = () => {
         {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>}
         {success && <div className="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-4">Account created! Redirecting to login...</div>}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              placeholder="Nisarg Patel"
-            />
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input

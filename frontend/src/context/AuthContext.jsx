@@ -9,6 +9,14 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const parseError = (err) => {
+    const detail = err.response?.data?.detail
+    if (!detail) return 'An error occurred'
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) return detail.map(d => d.msg || d.message || JSON.stringify(d)).join(', ')
+    return JSON.stringify(detail)
+  }
+
   useEffect(() => {
     if (token) {
       setUser({ token })
@@ -29,21 +37,21 @@ export const AuthProvider = ({ children }) => {
       setUser({ email, token: access_token })
       return true
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      setError(parseError(err))
       return false
     } finally {
       setLoading(false)
     }
   }
 
-  const register = async (email, password, fullName) => {
+  const register = async (email, password) => {
     setLoading(true)
     setError(null)
     try {
-      await authAPI.register({ email, password, full_name: fullName })
+      await authAPI.register({ email, password })
       return true
     } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed')
+      setError(parseError(err))
       return false
     } finally {
       setLoading(false)
