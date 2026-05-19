@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: finance_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-financedb}
+      POSTGRES_USER: ${POSTGRES_USER:-financeuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financepass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - finance_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-financeuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: nisarg2001009/devops-python-api:latest
+    container_name: finance_backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-financeuser}:${POSTGRES_PASSWORD:-financepass}@db:5432/${POSTGRES_DB:-financedb}
+      SECRET_KEY: ${SECRET_KEY:-supersecretkey123changeme}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - finance_network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: finance_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - finance_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  finance_network:
+    driver: bridge
