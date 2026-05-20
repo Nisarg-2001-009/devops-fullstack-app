@@ -298,5 +298,5 @@ Each project builds on the previous — Project 4 consumes the API built in Proj
 
 ## Author
 
-**Nisarg Patel**  
+**Nisarg Pawar**  
 [GitHub](https://github.com/Nisarg-2001-009)
